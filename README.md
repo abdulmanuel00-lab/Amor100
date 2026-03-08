@@ -31,3 +31,4 @@ Este projeto usa `Socket.IO` e `better-sqlite3` no backend, entao rode o backend
    `npm run build`
 
 Ja existe `vercel.json` configurado para SPA (`rewrites` para `index.html`).
+"# Amor100" 
