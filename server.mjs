@@ -50,6 +50,19 @@ db.exec(`
     responder TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS game_sessions (
+    id TEXT PRIMARY KEY,
+    user_a TEXT NOT NULL,
+    user_b TEXT NOT NULL,
+    started_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS login_events (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    happened_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS questions (
     id TEXT PRIMARY KEY,
     room_id TEXT,
@@ -68,12 +81,36 @@ db.exec(`
     message TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS direct_messages (
+    id TEXT PRIMARY KEY,
+    from_user_id TEXT NOT NULL,
+    to_user_id TEXT NOT NULL,
+    message TEXT NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    read_at DATETIME
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_direct_messages_pair_time
+    ON direct_messages (from_user_id, to_user_id, timestamp);
+
+  CREATE INDEX IF NOT EXISTS idx_direct_messages_unread
+    ON direct_messages (to_user_id, read_at, timestamp);
+
+  CREATE INDEX IF NOT EXISTS idx_game_sessions_started_at
+    ON game_sessions (started_at);
+
+  CREATE INDEX IF NOT EXISTS idx_game_sessions_pair
+    ON game_sessions (user_a, user_b, started_at);
+
+  CREATE INDEX IF NOT EXISTS idx_login_events_happened_at
+    ON login_events (happened_at);
 `);
 
 app.use(express.json());
 
 function broadcastOnlineUsers() {
-  const users = db.prepare('SELECT id, name FROM users WHERE online = 1 ORDER BY name COLLATE NOCASE ASC').all();
+  const users = db.prepare('SELECT id, name, online FROM users ORDER BY online DESC, name COLLATE NOCASE ASC').all();
   io.emit('online_users', { users });
 }
 
@@ -102,6 +139,45 @@ function emitToUser(userId, event, payload) {
     io.to(socketId).emit(event, payload);
   });
   return true;
+}
+
+function getDirectThreads(userId) {
+  return db
+    .prepare(
+      `
+      SELECT
+        CASE WHEN dm.from_user_id = @userId THEN dm.to_user_id ELSE dm.from_user_id END AS peer_id,
+        u.name AS peer_name,
+        dm.message AS last_message,
+        dm.timestamp AS last_message_at,
+        (
+          SELECT COUNT(*)
+          FROM direct_messages unread
+          WHERE unread.from_user_id = CASE WHEN dm.from_user_id = @userId THEN dm.to_user_id ELSE dm.from_user_id END
+            AND unread.to_user_id = @userId
+            AND unread.read_at IS NULL
+        ) AS unread_count
+      FROM direct_messages dm
+      LEFT JOIN users u ON u.id = CASE WHEN dm.from_user_id = @userId THEN dm.to_user_id ELSE dm.from_user_id END
+      INNER JOIN (
+        SELECT
+          CASE WHEN from_user_id = @userId THEN to_user_id ELSE from_user_id END AS peer_id,
+          MAX(timestamp) AS max_ts
+        FROM direct_messages
+        WHERE from_user_id = @userId OR to_user_id = @userId
+        GROUP BY peer_id
+      ) latest
+        ON latest.peer_id = CASE WHEN dm.from_user_id = @userId THEN dm.to_user_id ELSE dm.from_user_id END
+       AND latest.max_ts = dm.timestamp
+      WHERE dm.from_user_id = @userId OR dm.to_user_id = @userId
+      ORDER BY dm.timestamp DESC
+    `
+    )
+    .all({ userId });
+}
+
+function emitDirectThreads(userId) {
+  emitToUser(userId, 'direct_threads', { threads: getDirectThreads(userId) });
 }
 
 // API Routes
@@ -168,6 +244,9 @@ app.post('/api/auth/login', (req, res) => {
     stmt.run(id, normalizedEmail, name || 'User');
     
     const user = db.prepare('SELECT * FROM users WHERE phone = ?').get(normalizedEmail);
+    if (user?.id) {
+      db.prepare('INSERT INTO login_events (id, user_id) VALUES (?, ?)').run(Math.random().toString(36).substring(2, 15), user.id);
+    }
     res.json({ user });
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
@@ -182,13 +261,49 @@ app.get('/api/rooms/available', (_req, res) => {
   }
 });
 
-app.get('/api/ranking', (req, res) => {
-  // Mock ranking
-  res.json([
-    { rank: 1, names: 'Ana ❤️ Paulo', percentage: 98 },
-    { rank: 2, names: 'Carla ❤️ João', percentage: 95 },
-    { rank: 3, names: 'Sofia ❤️ Marco', percentage: 93 },
-  ]);
+app.get('/api/ranking', (_req, res) => {
+  try {
+    const rows = db
+      .prepare(
+        `
+        SELECT
+          gs.user_a,
+          gs.user_b,
+          u1.name AS name_a,
+          u2.name AS name_b,
+          COUNT(*) AS games,
+          MAX(gs.started_at) AS last_played_at
+        FROM game_sessions gs
+        LEFT JOIN users u1 ON u1.id = gs.user_a
+        LEFT JOIN users u2 ON u2.id = gs.user_b
+        WHERE gs.started_at >= datetime('now', '-7 days')
+        GROUP BY gs.user_a, gs.user_b
+        ORDER BY games DESC, last_played_at DESC
+        LIMIT 20
+      `
+      )
+      .all();
+
+    const ranking = rows.map((row, index) => ({
+      rank: index + 1,
+      names: `${row.name_a || 'Jogador'} & ${row.name_b || 'Jogador'}`,
+      games: Number(row.games || 0),
+    }));
+
+    res.json(ranking);
+  } catch (_err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+app.get('/api/stats', (_req, res) => {
+  try {
+    const usersRow = db.prepare('SELECT COUNT(*) AS total FROM users').get();
+    const loginsRow = db.prepare('SELECT COUNT(*) AS total FROM login_events').get();
+    res.json({ totalUsers: Number(usersRow?.total || 0), totalLogins: Number(loginsRow?.total || 0) });
+  } catch (_err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // Socket.io logic
@@ -206,6 +321,7 @@ io.on('connection', (socket) => {
     db.prepare('UPDATE users SET online = 1 WHERE id = ?').run(userId);
     broadcastOnlineUsers();
     socket.emit('available_rooms', { rooms: getAvailableRooms() });
+    socket.emit('direct_threads', { threads: getDirectThreads(userId) });
   });
 
   socket.on('request_available_rooms', () => {
@@ -217,6 +333,22 @@ io.on('connection', (socket) => {
     db.prepare('UPDATE users SET online = 0 WHERE id = ?').run(userId);
     userSockets.delete(userId);
     broadcastOnlineUsers();
+  });
+
+  socket.on('update_user_name', ({ userId, name }, callback) => {
+    const cleanName = String(name || '').trim();
+    if (!userId || cleanName.length < 2) {
+      if (typeof callback === 'function') callback({ ok: false, error: 'Nome invalido' });
+      return;
+    }
+
+    db.prepare('UPDATE users SET name = ? WHERE id = ?').run(cleanName, userId);
+    broadcastOnlineUsers();
+    userSockets.forEach((_socketIds, connectedUserId) => {
+      emitDirectThreads(connectedUserId);
+    });
+    io.emit('user_name_updated', { userId, name: cleanName });
+    if (typeof callback === 'function') callback({ ok: true, name: cleanName });
   });
 
   socket.on('invite_to_room', ({ fromUserId, toUserId, roomId, fromName }, callback) => {
@@ -254,6 +386,106 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('request_direct_threads', ({ userId }) => {
+    if (!userId) return;
+    socket.emit('direct_threads', { threads: getDirectThreads(userId) });
+  });
+
+  socket.on('request_direct_messages', ({ userId, withUserId }, callback) => {
+    if (!userId || !withUserId) {
+      if (typeof callback === 'function') callback({ ok: false, error: 'Invalid request' });
+      return;
+    }
+
+    const messages = db
+      .prepare(
+        `
+        SELECT id, from_user_id, to_user_id, message, timestamp
+        FROM direct_messages
+        WHERE (from_user_id = ? AND to_user_id = ?)
+           OR (from_user_id = ? AND to_user_id = ?)
+        ORDER BY timestamp ASC
+        LIMIT 300
+      `
+      )
+      .all(userId, withUserId, withUserId, userId);
+
+    if (typeof callback === 'function') callback({ ok: true, messages });
+  });
+
+  socket.on('mark_direct_read', ({ userId, withUserId }) => {
+    if (!userId || !withUserId) return;
+    db.prepare(
+      `
+      UPDATE direct_messages
+      SET read_at = @readAt
+      WHERE to_user_id = @userId
+        AND from_user_id = @withUserId
+        AND read_at IS NULL
+    `
+    ).run({ readAt: new Date().toISOString(), userId, withUserId });
+    emitDirectThreads(userId);
+  });
+
+  socket.on('clear_direct_messages', ({ userId, withUserId }, callback) => {
+    if (!userId || !withUserId) {
+      if (typeof callback === 'function') callback({ ok: false, error: 'Invalid clear request' });
+      return;
+    }
+
+    db.prepare(
+      `
+      DELETE FROM direct_messages
+      WHERE (from_user_id = ? AND to_user_id = ?)
+         OR (from_user_id = ? AND to_user_id = ?)
+    `
+    ).run(userId, withUserId, withUserId, userId);
+
+    emitDirectThreads(userId);
+    emitDirectThreads(withUserId);
+    if (typeof callback === 'function') callback({ ok: true });
+  });
+
+  socket.on('send_direct_message', ({ fromUserId, toUserId, message }, callback) => {
+    const cleanMessage = String(message || '').trim();
+    if (!fromUserId || !toUserId || !cleanMessage) {
+      if (typeof callback === 'function') callback({ ok: false, error: 'Invalid message payload' });
+      return;
+    }
+
+    const msgId = Math.random().toString(36).substring(2, 15);
+    const timestamp = new Date().toISOString();
+    db.prepare(
+      `
+      INSERT INTO direct_messages (id, from_user_id, to_user_id, message, timestamp)
+      VALUES (?, ?, ?, ?, ?)
+    `
+    ).run(msgId, fromUserId, toUserId, cleanMessage, timestamp);
+
+    const payload = {
+      id: msgId,
+      fromUserId,
+      toUserId,
+      message: cleanMessage,
+      timestamp,
+    };
+
+    emitToUser(fromUserId, 'direct_message', payload);
+    emitToUser(toUserId, 'direct_message', payload);
+    emitDirectThreads(fromUserId);
+    emitDirectThreads(toUserId);
+
+    const fromUser = db.prepare('SELECT name FROM users WHERE id = ?').get(fromUserId);
+    emitToUser(toUserId, 'direct_message_notification', {
+      fromUserId,
+      fromName: fromUser?.name || 'Jogador',
+      message: cleanMessage,
+      timestamp,
+    });
+
+    if (typeof callback === 'function') callback({ ok: true, message: payload });
+  });
+
   socket.on('join_room', ({ roomId, userId }) => {
     socket.join(roomId);
     console.log(`User ${userId} joined room ${roomId}`);
@@ -270,6 +502,9 @@ io.on('connection', (socket) => {
       // Join as player 2
       db.prepare('UPDATE rooms SET player2 = ?, status = ?, asker = ?, responder = ? WHERE id = ?')
         .run(userId, 'playing', room.player1, userId, roomId);
+      const pair = [room.player1, userId].sort();
+      db.prepare('INSERT INTO game_sessions (id, user_a, user_b) VALUES (?, ?, ?)')
+        .run(Math.random().toString(36).substring(2, 15), pair[0], pair[1]);
       room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(roomId);
       io.to(roomId).emit('game_start', { room });
       broadcastAvailableRooms();
@@ -409,3 +644,4 @@ async function startServer() {
 }
 
 startServer();
+

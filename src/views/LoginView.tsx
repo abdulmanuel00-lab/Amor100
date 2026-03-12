@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Heart, Mail, User } from 'lucide-react';
 import { motion } from 'motion/react';
 import { apiUrl } from '../lib/api';
@@ -22,6 +22,20 @@ export default function LoginView({ onLogin }: { onLogin: (user: any) => void })
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [error, setError] = useState('');
+  const [totalLogins, setTotalLogins] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(apiUrl('/api/stats'))
+      .then((res) => res.json())
+      .then((data) => {
+        if (typeof data?.totalLogins === 'number') {
+          setTotalLogins(data.totalLogins);
+        }
+      })
+      .catch(() => {
+        setTotalLogins(null);
+      });
+  }, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +133,11 @@ export default function LoginView({ onLogin }: { onLogin: (user: any) => void })
           </div>
           <h1 className="text-3xl font-bold text-slate-800 tracking-tight">AMOR 100%</h1>
           <p className="text-slate-500 mt-2 text-center text-sm">Descubra o quanto voces se conhecem</p>
+          {step === 1 && totalLogins !== null && (
+            <p className="mt-3 rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 border border-rose-200">
+              {`${totalLogins} adesoes ja registradas`}
+            </p>
+          )}
         </div>
 
         {error && (

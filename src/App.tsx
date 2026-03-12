@@ -8,6 +8,7 @@ import GameView from './views/GameView';
 import ResultView from './views/ResultView';
 import RankingView from './views/RankingView';
 import ChatView from './views/ChatView';
+import DirectChatView from './views/DirectChatView';
 import { API_BASE_URL } from './lib/api';
 
 // Initialize socket connection
@@ -79,7 +80,7 @@ function InviteOverlay({
 
 export default function App() {
   const [user, setUser] = useState<{ id: string; name: string; phone: string } | null>(null);
-  const [onlineUsers, setOnlineUsers] = useState<Array<{ id: string; name: string }>>([]);
+  const [onlineUsers, setOnlineUsers] = useState<Array<{ id: string; name: string; online?: boolean }>>([]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('amor100_user');
@@ -102,13 +103,25 @@ export default function App() {
   };
 
   useEffect(() => {
-    const onOnlineUsers = ({ users }: { users: Array<{ id: string; name: string }> }) => {
+    const onOnlineUsers = ({ users }: { users: Array<{ id: string; name: string; online?: boolean }> }) => {
       setOnlineUsers(Array.isArray(users) ? users : []);
+    };
+    const onUserNameUpdated = ({ userId, name }: { userId: string; name: string }) => {
+      if (!userId || !name) return;
+      setOnlineUsers((prev) => prev.map((item) => (item.id === userId ? { ...item, name } : item)));
+      setUser((prev) => {
+        if (!prev || prev.id !== userId) return prev;
+        const updated = { ...prev, name };
+        localStorage.setItem('amor100_user', JSON.stringify(updated));
+        return updated;
+      });
     };
 
     socket.on('online_users', onOnlineUsers);
+    socket.on('user_name_updated', onUserNameUpdated);
     return () => {
       socket.off('online_users', onOnlineUsers);
+      socket.off('user_name_updated', onUserNameUpdated);
     };
   }, []);
 
@@ -140,6 +153,7 @@ export default function App() {
           <Route path="/result/:roomId" element={<ResultView user={user} socket={socket} />} />
           <Route path="/ranking" element={<RankingView />} />
           <Route path="/chat/:roomId" element={<ChatView user={user} socket={socket} />} />
+          <Route path="/chat/user/:targetUserId" element={<DirectChatView user={user} socket={socket} />} />
         </Routes>
         <Signature />
       </div>

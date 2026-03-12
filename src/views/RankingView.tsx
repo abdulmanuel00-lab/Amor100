@@ -6,7 +6,7 @@ import { apiUrl } from '../lib/api';
 
 export default function RankingView() {
   const navigate = useNavigate();
-  const [ranking, setRanking] = useState<any[]>([]);
+  const [ranking, setRanking] = useState<Array<{ rank: number; names: string; games: number }>>([]);
 
   useEffect(() => {
     fetch(apiUrl('/api/ranking'))
@@ -33,8 +33,14 @@ export default function RankingView() {
       <main className="w-full max-w-md space-y-4">
         <div className="bg-white p-6 rounded-3xl shadow-xl shadow-rose-100/50 border border-rose-50 mb-8 text-center">
           <h2 className="text-lg font-bold text-slate-800 mb-2">Top Casais da Semana</h2>
-          <p className="text-slate-500 text-sm">Os casais que mais se conhecem no AMOR 100%</p>
+          <p className="text-slate-500 text-sm">Os casais que mais jogaram nos ultimos 7 dias</p>
         </div>
+
+        {ranking.length === 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
+            Ainda sem partidas nesta semana.
+          </div>
+        )}
 
         <div className="space-y-3">
           {ranking.map((item, index) => (
@@ -63,12 +69,13 @@ export default function RankingView() {
                   <div className="font-bold text-slate-800">{item.names}</div>
                   <div className="text-xs text-slate-500 flex items-center gap-1">
                     <Heart className="w-3 h-3 text-rose-400 fill-rose-400" />
-                    Amor Verdadeiro
+                    Casal ativo
                   </div>
                 </div>
               </div>
               <div className="text-xl font-black text-rose-500">
-                {item.percentage}%
+                {item.games}
+                <span className="ml-1 text-xs font-semibold text-slate-500">jogos</span>
               </div>
             </motion.div>
           ))}
