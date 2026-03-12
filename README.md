@@ -33,3 +33,4 @@ Este projeto usa `Socket.IO` e `better-sqlite3` no backend, entao rode o backend
 Ja existe `vercel.json` configurado para SPA (`rewrites` para `index.html`).
 "# Amor100" 
 "# Amor100" 
+"# Amor100" 
