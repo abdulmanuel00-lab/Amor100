@@ -17,11 +17,6 @@ const io = new Server(server, {
 });
 
 const PORT = 3000;
-const OTP_TTL_MS = 5 * 60 * 1000;
-const OTP_VERIFIED_TTL_MS = 10 * 60 * 1000;
-const otpStore = new Map<string, { code: string; expiresAt: number }>();
-const verifiedPhones = new Map<string, number>();
-const isLocalOtpDebug = process.env.NODE_ENV !== 'production';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const userSockets = new Map<string, Set<string>>();
 const socketUsers = new Map<string, string>();
@@ -185,47 +180,6 @@ function emitDirectThreads(userId: string) {
 }
 
 // API Routes
-app.post('/api/auth/send-otp', (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required' });
-  const normalizedEmail = String(email).trim().toLowerCase();
-  if (!EMAIL_REGEX.test(normalizedEmail)) {
-    return res.status(400).json({ error: 'Invalid email' });
-  }
-
-  const code = String(Math.floor(1000 + Math.random() * 9000));
-  otpStore.set(normalizedEmail, { code, expiresAt: Date.now() + OTP_TTL_MS });
-
-  if (isLocalOtpDebug) {
-    console.log(`[OTP][DEV][EMAIL] ${normalizedEmail}: ${code}`);
-  }
-
-  res.json({ ok: true, ...(isLocalOtpDebug ? { devCode: code } : {}) });
-});
-
-app.post('/api/auth/verify-otp', (req, res) => {
-  const { email, otp } = req.body;
-  if (!email || !otp) return res.status(400).json({ error: 'Email and OTP required' });
-  const normalizedEmail = String(email).trim().toLowerCase();
-  if (!EMAIL_REGEX.test(normalizedEmail)) {
-    return res.status(400).json({ error: 'Invalid email' });
-  }
-
-  const entry = otpStore.get(normalizedEmail);
-  if (!entry || entry.expiresAt < Date.now()) {
-    otpStore.delete(normalizedEmail);
-    return res.status(400).json({ error: 'OTP expired or not requested' });
-  }
-
-  if (entry.code !== String(otp)) {
-    return res.status(401).json({ error: 'Invalid OTP' });
-  }
-
-  otpStore.delete(normalizedEmail);
-  verifiedPhones.set(normalizedEmail, Date.now() + OTP_VERIFIED_TTL_MS);
-  res.json({ ok: true });
-});
-
 app.post('/api/auth/login', (req, res) => {
   const { email, name } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required' });
@@ -233,13 +187,6 @@ app.post('/api/auth/login', (req, res) => {
   if (!EMAIL_REGEX.test(normalizedEmail)) {
     return res.status(400).json({ error: 'Invalid email' });
   }
-
-  const verifiedUntil = verifiedPhones.get(normalizedEmail);
-  if (!verifiedUntil || verifiedUntil < Date.now()) {
-    verifiedPhones.delete(normalizedEmail);
-    return res.status(401).json({ error: 'Email not verified' });
-  }
-  verifiedPhones.delete(normalizedEmail);
 
   const id = Math.random().toString(36).substring(2, 15);
   
