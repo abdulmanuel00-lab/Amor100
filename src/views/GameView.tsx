@@ -145,7 +145,7 @@ const QUESTION_SUGGESTIONS = [
     question: 'Qual dessas coisas eu mais valorizo em mim?',
     options: ['Força 💪', 'Inteligência 🧠', 'Coração ❤️', 'Persistência 🔥'],
     correctIndex: 3,
-  }
+  },
   {
     question: 'Qual é a minha rede social favorita?',
     options: ['WhatsApp 💬', 'Facebook 📘', 'Instagram 📸', 'TikTok 🎵'],
