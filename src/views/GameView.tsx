@@ -31,6 +31,221 @@ const QUESTION_SUGGESTIONS = [
     options: ['Cinema', 'Jantar', 'Parque', 'Praia'],
     correctIndex: 1,
   },
+  {
+    question: 'O que não pode faltar no nosso relacionamento?',
+    options: ['Confiança 🤝', 'Amor ❤️', 'Respeito 🙏', 'Diversão 😄'],
+    correctIndex: 1,
+    },
+    {
+    question: 'Qual é a minha comida favorita?',
+    options: ['Arroz com frango 🍗', 'Pizza 🍕', 'Matapa 🍲', 'Hambúrguer 🍔'],
+    correctIndex: 0,
+  },
+  {
+    question: 'O que eu mais gosto de fazer no tempo livre?',
+    options: ['Dormir 😴', 'Mexer no telemóvel 📱', 'Ver filmes 🎬', 'Sair com amigos 🚶‍♂️'],
+    correctIndex: 1,
+  },
+  {
+    question: 'Qual é o meu maior sonho?',
+    options: ['Ficar rico 💰', 'Viajar o mundo 🌍', 'Ter uma família feliz 👨‍👩‍👧', 'Ter um negócio próprio 💼'],
+    correctIndex: 3,
+  },
+  {
+    question: 'O que mais me irrita?',
+    options: ['Mentira 🤥', 'Atrasos ⏰', 'Falta de respeito 😤', 'Barulho excessivo 🔊'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual é a minha cor favorita?',
+    options: ['Preto ⚫', 'Azul 🔵', 'Branco ⚪', 'Vermelho 🔴'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Se eu pudesse escolher agora, eu preferia…',
+    options: ['Ficar em casa contigo 🏠❤️', 'Sair para comer 🍔', 'Viajar ✈️', 'Jogar ou ver algo 🎮'],
+    correctIndex: 0,
+  },
+  {
+    question: 'O que eu mais valorizo em um relacionamento?',
+    options: ['Amor ❤️', 'Fidelidade 💍', 'Respeito 🙏', 'Comunicação 🗣️'],
+    correctIndex: 1,
+  },
+  {
+    question: 'Qual é o meu tipo de filme favorito?',
+    options: ['Ação 💥', 'Romance 💖', 'Comédia 😂', 'Terror 😱'],
+    correctIndex: 0,
+  },
+  {
+    question: 'O que eu faria primeiro se ganhasse muito dinheiro?',
+    options: ['Compraria casa 🏡', 'Ajudaria família 👨‍👩‍👧', 'Compraria carro 🚗', 'Investiria 💼'],
+    correctIndex: 1,
+  },
+  {
+    question: 'O que eu mais gosto em ti? 😏',
+    options: ['Teu sorriso 😊', 'Tua forma de cuidar de mim 🥰', 'Tua personalidade 😍', 'Tudo em ti ❤️'],
+    correctIndex: 3,
+  },
+    {
+    question: 'Qual é a minha bebida favorita?',
+    options: ['Sumo 🧃', 'Refrigerante 🥤', 'Água 💧', 'Cerveja 🍺'],
+    correctIndex: 1,
+  },
+  {
+    question: 'O que eu faço quando estou chateado?',
+    options: ['Fico calado 🤐', 'Reclamo 😤', 'Me afasto 🚶‍♂️', 'Brinco para disfarçar 😅'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual é o meu maior medo?',
+    options: ['Perder quem amo 💔', 'Falhar na vida 😟', 'Ficar sozinho 😶', 'Não alcançar meus sonhos 😓'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual dessas coisas eu escolheria comer agora?',
+    options: ['Frango assado 🍗', 'Pizza 🍕', 'Batatas fritas 🍟', 'Churrasco 🍖'],
+    correctIndex: 3,
+  },
+  {
+    question: 'Qual é o meu estilo de música favorito?',
+    options: ['Hip Hop 🎧', 'Kizomba 🎶', 'Afrobeat 🔥', 'Gospel 🙏'],
+    correctIndex: 2,
+  },
+  {
+    question: 'Se eu pudesse comprar algo agora, seria…',
+    options: ['Telemóvel novo 📱', 'Carro 🚗', 'Roupas 👕', 'Casa 🏠'],
+    correctIndex: 0,
+  },
+  {
+    question: 'O que eu mais gosto de fazer contigo?',
+    options: ['Conversar 💬', 'Rir 😂', 'Sair juntos 🚶‍♂️', 'Ficar juntinhos ❤️'],
+    correctIndex: 3,
+  },
+  {
+    question: 'Qual é o meu maior defeito?',
+    options: ['Impaciência 😤', 'Ciúmes 😒', 'Teimosia 😅', 'Preguiça 😴'],
+    correctIndex: 2,
+  },
+  {
+    question: 'Qual dessas qualidades eu mais tenho?',
+    options: ['Carinhoso 🥰', 'Divertido 😂', 'Responsável 💼', 'Atencioso ❤️'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Se eu fosse sair agora, eu iria…',
+    options: ['Com amigos 🧑‍🤝‍🧑', 'Contigo ❤️', 'Sozinho 🚶‍♂️', 'Nem sairia 😅'],
+    correctIndex: 1,
+  },
+  {
+    question: 'O que eu faço primeiro ao acordar?',
+    options: ['Pego no telemóvel 📱', 'Volto a dormir 😴', 'Levanto direto 🚶‍♂️', 'Penso na vida 🤔'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual dessas coisas eu mais valorizo em mim?',
+    options: ['Força 💪', 'Inteligência 🧠', 'Coração ❤️', 'Persistência 🔥'],
+    correctIndex: 3,
+  }
+  {
+    question: 'Qual é a minha rede social favorita?',
+    options: ['WhatsApp 💬', 'Facebook 📘', 'Instagram 📸', 'TikTok 🎵'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual é a hora do dia que eu mais gosto?',
+    options: ['Manhã 🌅', 'Tarde ☀️', 'Noite 🌙', 'Madrugada 🌌'],
+    correctIndex: 2,
+  },
+  {
+    question: 'O que eu prefiro assistir?',
+    options: ['Séries 📺', 'Filmes 🎬', 'YouTube ▶️', 'Jogos 🎮'],
+    correctIndex: 1,
+  },
+  {
+    question: 'Qual é o meu prato típico favorito?',
+    options: ['Xima com caril 🍛', 'Matapa 🍲', 'Arroz com peixe 🐟', 'Frango grelhado 🍗'],
+    correctIndex: 1,
+  },
+  {
+    question: 'Se eu estivesse triste, o que me anima mais?',
+    options: ['Conversar contigo ❤️', 'Ouvir música 🎧', 'Ficar sozinho 🤐', 'Dormir 😴'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual é o meu tipo de clima favorito?',
+    options: ['Calor ☀️', 'Frio ❄️', 'Chuva 🌧️', 'Nublado ☁️'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual dessas coisas eu mais gosto de comprar?',
+    options: ['Roupas 👕', 'Tecnologia 📱', 'Comida 🍔', 'Sapatos 👟'],
+    correctIndex: 1,
+  },
+  {
+    question: 'Qual é o meu passatempo preferido?',
+    options: ['Jogar 🎮', 'Assistir 📺', 'Passear 🚶‍♂️', 'Ouvir música 🎧'],
+    correctIndex: 0,
+  },
+  {
+    question: 'O que eu faria num dia perfeito?',
+    options: ['Ficar contigo ❤️', 'Sair com amigos 🧑‍🤝‍🧑', 'Descansar 😴', 'Viajar ✈️'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual dessas coisas eu mais odeio?',
+    options: ['Mentiras 🤥', 'Atrasos ⏰', 'Desorganização 😤', 'Barulho 🔊'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual é o meu estilo de roupa?',
+    options: ['Casual 👕', 'Elegante 🤵', 'Desportivo 🏃‍♂️', 'Misturado 😅'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual dessas comidas eu escolheria sempre?',
+    options: ['Pizza 🍕', 'Hambúrguer 🍔', 'Churrasco 🍖', 'Frango 🍗'],
+    correctIndex: 2,
+  },
+  {
+    question: 'Se eu pudesse mudar algo na minha vida, seria…',
+    options: ['Dinheiro 💰', 'Tempo ⏳', 'Trabalho 💼', 'Nada 😌'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual dessas coisas eu faria contigo agora?',
+    options: ['Ver filme 🎬', 'Comer 🍔', 'Conversar 💬', 'Dormir 😴'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual dessas qualidades eu mais admiro nas pessoas?',
+    options: ['Sinceridade 🤝', 'Humildade 🙏', 'Inteligência 🧠', 'Coragem 💪'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual é o meu maior objetivo agora?',
+    options: ['Ganhar dinheiro 💰', 'Crescer na vida 📈', 'Ser feliz ❤️', 'Ajudar família 👨‍👩‍👧'],
+    correctIndex: 1,
+  },
+  {
+    question: 'O que eu faço quando estou entediado?',
+    options: ['Uso o telemóvel 📱', 'Durmo 😴', 'Saio 🚶‍♂️', 'Como 🍔'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual dessas coisas eu mais gosto em um dia?',
+    options: ['Boa comida 🍛', 'Boa companhia ❤️', 'Descanso 😴', 'Diversão 😂'],
+    correctIndex: 1,
+  },
+  {
+    question: 'Se eu pudesse aprender algo novo, seria…',
+    options: ['Programação 💻', 'Música 🎧', 'Negócios 💼', 'Idiomas 🌍'],
+    correctIndex: 0,
+  },
+  {
+    question: 'O que eu mais gosto de fazer à noite?',
+    options: ['Ver filmes 🎬', 'Conversar 💬', 'Dormir 😴', 'Mexer no telemóvel 📱'],
+    correctIndex: 3,
+  }
 ];
 
 export default function GameView({ user, socket, onMinimize }: { user: any; socket: Socket; onMinimize: (roomId: string) => void }) {
@@ -314,36 +529,12 @@ export default function GameView({ user, socket, onMinimize }: { user: any; sock
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white p-6 rounded-3xl shadow-xl shadow-rose-100/50 border border-rose-50 text-center"
             >
-              {isMinimized ? (
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-slate-700 font-medium">Aguardando pergunta...</span>
-                  <button
-                    onClick={() => setIsMinimized(false)}
-                    className="text-xs font-semibold text-rose-500 bg-rose-100 px-3 py-1 rounded-lg"
-                  >
-                    Maximizar
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin"></div>
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-800 mb-2">Aguardando...</h2>
-                  <p className="text-slate-500 mb-4">Seu parceiro(a) está criando uma pergunta difícil para você!</p>
-                  <button
-                    onClick={() => {
-                      setIsMinimized(true);
-                      const rid = roomId || '';
-                      if (rid) onMinimize(rid);
-                      navigate('/');
-                    }}
-                    className="text-sm font-semibold text-rose-500 bg-rose-100 px-4 py-2 rounded-xl"
-                  >
-                    Minimizar
-                  </button>
-                </>
-              )}
+              <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin"></div>
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">Aguardando...</h2>
+              <p className="text-slate-500 mb-4">Seu parceiro(a) está criando uma pergunta difícil para você!</p>
+              <p className="text-sm text-slate-400">A opção de minimizar não está disponível enquanto aguarda pergunta.</p>
             </motion.div>
           )}
 
