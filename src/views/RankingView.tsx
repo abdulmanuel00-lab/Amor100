@@ -15,8 +15,8 @@ export default function RankingView() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 p-4 pb-20 md:p-8 md:pb-20 flex flex-col items-center">
-      <header className="w-full max-w-md flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 px-4 md:px-8 py-4 md:py-8 flex flex-col items-center">
+      <header className="w-full max-w-5xl flex items-center justify-between mb-8">
         <button 
           onClick={() => navigate(-1)}
           className="p-2 bg-white/50 rounded-full hover:bg-white/80 transition-colors"
@@ -30,7 +30,7 @@ export default function RankingView() {
         <div className="w-9"></div>
       </header>
 
-      <main className="w-full max-w-md space-y-4">
+      <main className="w-full max-w-5xl space-y-4 mx-auto">
         <div className="bg-white p-6 rounded-3xl shadow-xl shadow-rose-100/50 border border-rose-50 mb-8 text-center">
           <h2 className="text-lg font-bold text-slate-800 mb-2">Top Casais da Semana</h2>
           <p className="text-slate-500 text-sm">Os casais que mais jogaram nos ultimos 7 dias</p>

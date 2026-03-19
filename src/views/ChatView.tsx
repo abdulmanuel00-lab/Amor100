@@ -39,8 +39,8 @@ export default function ChatView({ user, socket }: { user: any, socket: Socket }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 pb-20 flex flex-col items-center">
-      <header className="w-full max-w-md flex items-center justify-between p-4 bg-white/80 backdrop-blur-md shadow-sm border-b border-rose-100 sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 pb-20 px-4 md:px-8 flex flex-col items-center">
+      <header className="w-full max-w-5xl flex items-center justify-between p-4 bg-white/80 backdrop-blur-md shadow-sm border-b border-rose-100 sticky top-0 z-10">
         <button 
           onClick={() => navigate(-1)}
           className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 transition-colors"

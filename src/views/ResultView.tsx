@@ -71,11 +71,11 @@ export default function ResultView({ user, socket }: { user: any; socket: Socket
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 p-4 pb-20 md:p-8 md:pb-20 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 px-4 md:px-8 py-4 md:py-8 flex flex-col items-center justify-center">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white p-8 rounded-3xl shadow-2xl shadow-rose-200/50 border border-rose-100 w-full max-w-md text-center relative overflow-hidden"
+        className="w-full max-w-4xl md:max-w-3xl lg:max-w-2xl bg-white p-8 rounded-3xl shadow-2xl shadow-rose-200/50 border border-rose-100 text-center relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-rose-100/50 to-transparent"></div>
 

@@ -60,13 +60,21 @@ export default function DirectChatView({ user, socket }: { user: any; socket: So
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
     };
 
+    const onDirectMessagesCleared = ({ withUserId }: { withUserId: string }) => {
+      if (withUserId === peerId) {
+        setMessages([]);
+      }
+    };
+
     socket.on('direct_threads', onThreads);
     socket.on('direct_message', onDirectMessage);
+    socket.on('direct_messages_cleared', onDirectMessagesCleared);
     socket.emit('request_direct_threads', { userId: user.id });
 
     return () => {
       socket.off('direct_threads', onThreads);
       socket.off('direct_message', onDirectMessage);
+      socket.off('direct_messages_cleared', onDirectMessagesCleared);
     };
   }, [peerId, socket, user?.id]);
 
@@ -83,8 +91,8 @@ export default function DirectChatView({ user, socket }: { user: any; socket: So
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 pb-20 flex flex-col items-center">
-      <header className="w-full max-w-md flex items-center justify-between p-4 bg-white/80 backdrop-blur-md shadow-sm border-b border-rose-100 sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 pb-20 px-4 md:px-8 flex flex-col items-center">
+      <header className="w-full max-w-5xl flex items-center justify-between p-4 bg-white/80 backdrop-blur-md shadow-sm border-b border-rose-100 sticky top-0 z-10">
         <button onClick={() => navigate('/')} className="p-2 bg-slate-50 rounded-full hover:bg-slate-100 transition-colors">
           <ArrowLeft className="w-5 h-5 text-slate-600" />
         </button>
@@ -95,7 +103,7 @@ export default function DirectChatView({ user, socket }: { user: any; socket: So
         <div className="w-9" />
       </header>
 
-      <main className="w-full max-w-md flex-1 p-4 overflow-y-auto flex flex-col gap-3">
+      <main className="w-full max-w-5xl md:max-w-3xl flex-1 p-4 overflow-y-auto flex flex-col gap-3">
         {messages.length === 0 && <div className="text-center text-xs text-slate-400 my-4">Envie a primeira mensagem.</div>}
 
         {messages.map((msg) => {

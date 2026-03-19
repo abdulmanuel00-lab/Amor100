@@ -5,7 +5,7 @@ import { Heart, Send, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 
-export default function GameView({ user, socket }: { user: any, socket: Socket }) {
+export default function GameView({ user, socket, onMinimize }: { user: any; socket: Socket; onMinimize: (roomId: string) => void }) {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [room, setRoom] = useState<any>(null);
@@ -13,6 +13,7 @@ export default function GameView({ user, socket }: { user: any, socket: Socket }
   const [options, setOptions] = useState(['', '', '', '']);
   const [correctAnswer, setCorrectAnswer] = useState('0');
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
   const [questionCount, setQuestionCount] = useState(1);
@@ -26,6 +27,7 @@ export default function GameView({ user, socket }: { user: any, socket: Socket }
 
     socket.on('new_question', (q) => {
       setCurrentQuestion(q);
+      setIsMinimized(false);
       setResult(null);
       setSelectedAnswer(null);
     });
@@ -106,7 +108,7 @@ export default function GameView({ user, socket }: { user: any, socket: Socket }
         </div>
       </header>
 
-      <main className="w-full max-w-md flex-1 flex flex-col justify-center">
+      <main className="w-full max-w-5xl md:max-w-3xl mx-auto flex-1 flex flex-col justify-center">
         <AnimatePresence mode="wait">
           {isAsker && !currentQuestion && (
             <motion.div 
@@ -179,13 +181,38 @@ export default function GameView({ user, socket }: { user: any, socket: Socket }
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white p-8 rounded-3xl shadow-xl shadow-rose-100/50 border border-rose-50 text-center"
+              className="bg-white p-6 rounded-3xl shadow-xl shadow-rose-100/50 border border-rose-50 text-center"
             >
-              <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin"></div>
-              </div>
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">Aguardando...</h2>
-              <p className="text-slate-500">Seu parceiro(a) está criando uma pergunta difícil para você!</p>
+              {isMinimized ? (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-slate-700 font-medium">Aguardando pergunta...</span>
+                  <button
+                    onClick={() => setIsMinimized(false)}
+                    className="text-xs font-semibold text-rose-500 bg-rose-100 px-3 py-1 rounded-lg"
+                  >
+                    Maximizar
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin"></div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">Aguardando...</h2>
+                  <p className="text-slate-500 mb-4">Seu parceiro(a) está criando uma pergunta difícil para você!</p>
+                  <button
+                    onClick={() => {
+                      setIsMinimized(true);
+                      const rid = roomId || '';
+                      if (rid) onMinimize(rid);
+                      navigate('/');
+                    }}
+                    className="text-sm font-semibold text-rose-500 bg-rose-100 px-4 py-2 rounded-xl"
+                  >
+                    Minimizar
+                  </button>
+                </>
+              )}
             </motion.div>
           )}
 

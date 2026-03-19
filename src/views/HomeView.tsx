@@ -9,11 +9,17 @@ export default function HomeView({
   onLogout,
   onlineUsers,
   socket,
+  minimizedRoomId,
+  onRestoreMinimized,
+  onCloseMinimized,
 }: {
   user: any;
   onLogout: () => void;
   onlineUsers: Array<{ id: string; name: string; online?: boolean }>;
   socket: Socket;
+  minimizedRoomId: string | null;
+  onRestoreMinimized: (roomId: string) => void;
+  onCloseMinimized: () => void;
 }) {
   const navigate = useNavigate();
   const [joinCode, setJoinCode] = useState('');
@@ -186,8 +192,9 @@ export default function HomeView({
   const offlinePlayers = onlineUsers.filter((player) => !player.online);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 p-4 pb-20 md:p-8 md:pb-20 flex flex-col items-center">
-      <header className="w-full max-w-md flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 px-4 md:px-8 py-4 md:py-8 flex flex-col items-center">
+      <header className="w-full max-w-5xl flex justify-between items-center mb-8">
+
         <div className="flex items-center gap-2">
           <div className="bg-rose-500 p-2 rounded-lg shadow-md shadow-rose-500/20">
             <Heart className="w-6 h-6 text-white fill-white" />
@@ -205,10 +212,30 @@ export default function HomeView({
         </div>
       </header>
 
+      {minimizedRoomId && (
+        <div className="w-full max-w-5xl mb-4 bg-white border border-rose-200 rounded-xl p-3 flex items-center justify-between gap-3 shadow-sm">
+          <span className="text-sm font-medium text-slate-700">Jogo minimizado (Sala {minimizedRoomId})</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onRestoreMinimized(minimizedRoomId)}
+              className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-xs font-semibold"
+            >
+              Maximizar
+            </button>
+            <button
+              onClick={() => onCloseMinimized()}
+              className="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 text-xs font-semibold"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
       <motion.main
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md space-y-6"
+        className="w-full max-w-5xl space-y-6 mx-auto"
       >
         {inviteStatus && <div className="rounded-xl bg-white px-4 py-3 text-sm text-slate-600 shadow-sm border border-slate-100">{inviteStatus}</div>}
         {notifications.length > 0 && (
@@ -410,6 +437,28 @@ export default function HomeView({
           )}
         </div>
       </motion.main>
+
+      {minimizedRoomId && (
+        <div className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4">
+          <div className="w-full max-w-3xl bg-white/95 backdrop-blur rounded-xl border border-rose-200 p-3 flex items-center justify-between gap-3 shadow-lg">
+            <span className="text-sm font-medium text-slate-700">Jogo minimizado (Sala {minimizedRoomId})</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onRestoreMinimized(minimizedRoomId)}
+                className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-xs font-semibold"
+              >
+                Maximizar
+              </button>
+              <button
+                onClick={() => onCloseMinimized()}
+                className="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 text-xs font-semibold"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

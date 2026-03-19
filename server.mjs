@@ -112,6 +112,30 @@ function broadcastOnlineUsers() {
   io.emit('online_users', { users });
 }
 
+function setUserOnline(userId) {
+  if (!userId) return;
+  db.prepare('UPDATE users SET online = 1 WHERE id = ?').run(userId);
+  broadcastOnlineUsers();
+}
+
+function setUserOffline(userId) {
+  if (!userId) return;
+  db.prepare('UPDATE users SET online = 0 WHERE id = ?').run(userId);
+  broadcastOnlineUsers();
+}
+
+function cleanupOfflineUsers() {
+  const currentlyOnline = db.prepare('SELECT id FROM users WHERE online = 1').all();
+  const staleUsers = currentlyOnline.filter(({ id }) => !userSockets.has(id));
+  if (staleUsers.length === 0) return;
+
+  const stmt = db.prepare('UPDATE users SET online = 0 WHERE id = ?');
+  staleUsers.forEach(({ id }) => stmt.run(id));
+  broadcastOnlineUsers();
+}
+
+setInterval(cleanupOfflineUsers, 30 * 1000);
+
 function getAvailableRooms() {
   return db.prepare(`
     SELECT
@@ -268,8 +292,7 @@ io.on('connection', (socket) => {
     sockets.add(socket.id);
     userSockets.set(userId, sockets);
 
-    db.prepare('UPDATE users SET online = 1 WHERE id = ?').run(userId);
-    broadcastOnlineUsers();
+    setUserOnline(userId);
     socket.emit('available_rooms', { rooms: getAvailableRooms() });
     socket.emit('direct_threads', { threads: getDirectThreads(userId) });
   });
@@ -280,9 +303,16 @@ io.on('connection', (socket) => {
 
   socket.on('logout_user', ({ userId }) => {
     if (!userId) return;
-    db.prepare('UPDATE users SET online = 0 WHERE id = ?').run(userId);
-    userSockets.delete(userId);
-    broadcastOnlineUsers();
+
+    const sockets = userSockets.get(userId);
+    if (sockets) {
+      sockets.forEach((socketId) => {
+        socketUsers.delete(socketId);
+      });
+      userSockets.delete(userId);
+    }
+
+    setUserOffline(userId);
   });
 
   socket.on('update_user_name', ({ userId, name }, callback) => {
@@ -393,6 +423,10 @@ io.on('connection', (socket) => {
 
     emitDirectThreads(userId);
     emitDirectThreads(withUserId);
+
+    emitToUser(userId, 'direct_messages_cleared', { withUserId });
+    emitToUser(withUserId, 'direct_messages_cleared', { withUserId: userId });
+
     if (typeof callback === 'function') callback({ ok: true });
   });
 
@@ -550,20 +584,21 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const userId = socketUsers.get(socket.id);
+    socketUsers.delete(socket.id);
+
     if (userId) {
       const sockets = userSockets.get(userId);
       if (sockets) {
         sockets.delete(socket.id);
         if (sockets.size === 0) {
           userSockets.delete(userId);
-          db.prepare('UPDATE users SET online = 0 WHERE id = ?').run(userId);
+          setUserOffline(userId);
         } else {
           userSockets.set(userId, sockets);
         }
       }
-      socketUsers.delete(socket.id);
-      broadcastOnlineUsers();
     }
+
     console.log('User disconnected:', socket.id);
   });
 });

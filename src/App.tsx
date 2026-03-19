@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
 import LoginView from './views/LoginView';
@@ -81,11 +81,20 @@ function InviteOverlay({
 export default function App() {
   const [user, setUser] = useState<{ id: string; name: string; phone: string } | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<Array<{ id: string; name: string; online?: boolean }>>([]);
+  const [minimizedRoomId, setMinimizedRoomId] = useState<string | null>(null);
+  const [redirectToGame, setRedirectToGame] = useState<string | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('amor100_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedRoom = localStorage.getItem('amor100_minimized_room');
+    if (storedRoom) {
+      setMinimizedRoomId(storedRoom);
     }
   }, []);
 
@@ -100,6 +109,22 @@ export default function App() {
     }
     setUser(null);
     localStorage.removeItem('amor100_user');
+  };
+
+  const handleMinimizeGame = (roomId: string) => {
+    setMinimizedRoomId(roomId);
+    localStorage.setItem('amor100_minimized_room', roomId);
+  };
+
+  const handleRestoreMinimized = (roomId: string) => {
+    setMinimizedRoomId(null);
+    localStorage.removeItem('amor100_minimized_room');
+    setRedirectToGame(roomId);
+  };
+
+  const handleCloseMinimized = () => {
+    setMinimizedRoomId(null);
+    localStorage.removeItem('amor100_minimized_room');
   };
 
   useEffect(() => {
@@ -117,13 +142,29 @@ export default function App() {
       });
     };
 
+    const onNewQuestion = (payload: { roomId?: string }) => {
+      if (!payload?.roomId) return;
+      if (minimizedRoomId === payload.roomId) {
+        setMinimizedRoomId(null);
+        localStorage.removeItem('amor100_minimized_room');
+        setRedirectToGame(payload.roomId);
+      }
+    };
+
     socket.on('online_users', onOnlineUsers);
     socket.on('user_name_updated', onUserNameUpdated);
+    socket.on('new_question', onNewQuestion);
     return () => {
       socket.off('online_users', onOnlineUsers);
       socket.off('user_name_updated', onUserNameUpdated);
+      socket.off('new_question', onNewQuestion);
     };
-  }, []);
+  }, [minimizedRoomId]);
+
+  useEffect(() => {
+    if (!redirectToGame) return;
+    setRedirectToGame(null);
+  }, [redirectToGame]);
 
   useEffect(() => {
     if (user?.id) {
@@ -131,6 +172,17 @@ export default function App() {
     } else {
       setOnlineUsers([]);
     }
+
+    const onBeforeUnload = () => {
+      if (user?.id) {
+        socket.emit('logout_user', { userId: user.id });
+      }
+    };
+
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
   }, [user?.id]);
 
   if (!user) {
@@ -146,10 +198,50 @@ export default function App() {
     <Router>
       <div className="min-h-screen bg-pink-50 text-slate-900 font-sans selection:bg-pink-200">
         <InviteOverlay socket={socket} user={user} />
+
+        {redirectToGame && <Navigate to={`/game/${redirectToGame}`} replace />}
+
+        {minimizedRoomId && (
+          <div className="fixed bottom-20 inset-x-0 z-40 flex justify-center px-4 pointer-events-none">
+            <div className="w-full max-w-3xl pointer-events-auto bg-white/95 backdrop-blur rounded-xl border border-rose-200 p-3 flex items-center justify-between gap-3 shadow-lg">
+              <span className="text-sm font-medium text-slate-700">Jogo minimizado (Sala {minimizedRoomId})</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleRestoreMinimized(minimizedRoomId)}
+                  className="px-3 py-1.5 rounded-lg bg-rose-500 text-white text-xs font-semibold"
+                >
+                  Maximizar
+                </button>
+                <button
+                  onClick={handleCloseMinimized}
+                  className="px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 text-xs font-semibold"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <Routes>
-          <Route path="/" element={<HomeView user={user} onLogout={handleLogout} onlineUsers={onlineUsers} socket={socket} />} />
+          <Route
+            path="/"
+            element={
+              <HomeView
+                user={user}
+                onLogout={handleLogout}
+                onlineUsers={onlineUsers}
+                socket={socket}
+                minimizedRoomId={minimizedRoomId}
+                onRestoreMinimized={(roomId) => {
+                  handleRestoreMinimized(roomId);
+                }}
+                onCloseMinimized={handleCloseMinimized}
+              />
+            }
+          />
           <Route path="/room/:roomId" element={<RoomView user={user} socket={socket} />} />
-          <Route path="/game/:roomId" element={<GameView user={user} socket={socket} />} />
+          <Route path="/game/:roomId" element={<GameView user={user} socket={socket} onMinimize={handleMinimizeGame} />} />
           <Route path="/result/:roomId" element={<ResultView user={user} socket={socket} />} />
           <Route path="/ranking" element={<RankingView />} />
           <Route path="/chat/:roomId" element={<ChatView user={user} socket={socket} />} />

@@ -47,11 +47,11 @@ export default function RoomView({ user, socket }: { user: any; socket: Socket }
   if (!room) return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 p-4 pb-20 md:p-8 md:pb-20 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100 px-4 md:px-8 py-4 md:py-8 flex flex-col items-center justify-center">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white p-8 rounded-3xl shadow-xl shadow-rose-100/50 border border-rose-50 w-full max-w-md text-center"
+        className="w-full max-w-3xl md:max-w-2xl lg:max-w-xl bg-white p-8 rounded-3xl shadow-xl shadow-rose-100/50 border border-rose-50 text-center"
       >
         <div className="flex justify-center mb-6">
           <div className="bg-rose-50 p-4 rounded-full">
