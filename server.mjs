@@ -44,10 +44,24 @@ db.exec(`
     status TEXT DEFAULT 'waiting',
     percentage INTEGER DEFAULT 0,
     current_question INTEGER DEFAULT 0,
+    current_question_id TEXT,
     asker TEXT,
     responder TEXT
   );
 
+`);
+
+// Ensure current_question_id exists in legacy DB schema.
+try {
+  db.prepare('SELECT current_question_id FROM rooms LIMIT 1').get();
+} catch (err) {
+  if (err && err.message && err.message.includes('no such column: current_question_id')) {
+    db.exec('ALTER TABLE rooms ADD COLUMN current_question_id TEXT');
+  }
+}
+
+// Re-open exec with remaining tables creation if not created above.
+db.exec(`
   CREATE TABLE IF NOT EXISTS game_sessions (
     id TEXT PRIMARY KEY,
     user_a TEXT NOT NULL,
@@ -528,6 +542,21 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('pass_turn', ({ roomId, userId }) => {
+    if (!roomId || !userId) return;
+
+    const room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(roomId);
+    if (!room || room.asker !== userId || !room.responder) return;
+
+    db.prepare('UPDATE rooms SET asker = ?, responder = ?, current_question_id = NULL WHERE id = ?')
+      .run(room.responder, room.asker, roomId);
+
+    const updatedRoom = db.prepare('SELECT * FROM rooms WHERE id = ?').get(roomId);
+    io.to(roomId).emit('room_update', { room: updatedRoom });
+
+    broadcastAvailableRooms();
+  });
+
   socket.on('submit_question', (data) => {
     const { roomId, question, options, correctAnswer } = data;
     const qId = Math.random().toString(36).substring(2, 15);
@@ -536,6 +565,8 @@ io.on('connection', (socket) => {
       INSERT INTO questions (id, room_id, question, option1, option2, option3, option4, correct_answer)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(qId, roomId, question, options[0], options[1], options[2], options[3], correctAnswer);
+
+    db.prepare('UPDATE rooms SET current_question_id = ? WHERE id = ?').run(qId, roomId);
     
     io.to(roomId).emit('new_question', {
       id: qId,
@@ -565,6 +596,19 @@ io.on('connection', (socket) => {
       correctAnswer: q.correct_answer,
       percentage: room.percentage
     });
+  });
+
+  socket.on('request_question_by_id', ({ questionId }, callback) => {
+    if (!questionId) {
+      if (typeof callback === 'function') callback({ ok: false, error: 'Question ID required' });
+      return;
+    }
+
+    const question = db
+      .prepare('SELECT id, question, option1, option2, option3, option4, correct_answer FROM questions WHERE id = ?')
+      .get(questionId);
+
+    if (typeof callback === 'function') callback({ ok: !!question, question });
   });
 
   socket.on('send_message', (data) => {

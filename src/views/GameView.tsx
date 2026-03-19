@@ -1,17 +1,47 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Socket } from 'socket.io-client';
 import { Heart, Send, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 
+const QUESTION_SUGGESTIONS = [
+  {
+    question: 'Qual é o meu filme romântico favorito?',
+    options: ['Diário de uma Paixão', 'Titanic', 'Um Amor para Recordar', 'A Culpa É das Estrelas'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual foi a primeira viagem que fizemos juntos?',
+    options: ['Praia', 'Montanha', 'Parque', 'Museu'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual é meu prato preferido?',
+    options: ['Pizza', 'Sushi', 'Lasanha', 'Churrasco'],
+    correctIndex: 2,
+  },
+  {
+    question: 'Qual é minha música favorita?',
+    options: ['A Thousand Years', 'Shape of You', 'Perfect', 'Sunflower'],
+    correctIndex: 0,
+  },
+  {
+    question: 'Qual é meu lugar ideal para um encontro?',
+    options: ['Cinema', 'Jantar', 'Parque', 'Praia'],
+    correctIndex: 1,
+  },
+];
+
 export default function GameView({ user, socket, onMinimize }: { user: any; socket: Socket; onMinimize: (roomId: string) => void }) {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [room, setRoom] = useState<any>(null);
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '', '', '']);
   const [correctAnswer, setCorrectAnswer] = useState('0');
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -19,10 +49,24 @@ export default function GameView({ user, socket, onMinimize }: { user: any; sock
   const [questionCount, setQuestionCount] = useState(1);
 
   useEffect(() => {
+    const pendingQuestion = (location.state as any)?.pendingQuestion;
+    if (pendingQuestion) {
+      setCurrentQuestion(pendingQuestion);
+    }
+
     socket.emit('join_room', { roomId, userId: user.id });
 
-    socket.on('room_update', ({ room }) => {
-      setRoom(room);
+    socket.on('room_update', (payload) => {
+      const updatedRoom = payload?.room;
+      setRoom(updatedRoom);
+      if (!currentQuestion && updatedRoom?.current_question_id) {
+        const questionId = updatedRoom.current_question_id;
+        socket.emit('request_question_by_id', { questionId }, (res: any) => {
+          if (res?.ok && res.question) {
+            setCurrentQuestion(res.question);
+          }
+        });
+      }
     });
 
     socket.on('new_question', (q) => {
@@ -78,6 +122,34 @@ export default function GameView({ user, socket, onMinimize }: { user: any; sock
     });
   };
 
+  const applySuggestion = () => {
+    const suggestion = QUESTION_SUGGESTIONS[suggestionIndex];
+    setQuestion(suggestion.question);
+    setOptions([...suggestion.options]);
+    setCorrectAnswer(String(suggestion.correctIndex));
+  };
+
+  const randomSuggestion = () => {
+    const next = Math.floor(Math.random() * QUESTION_SUGGESTIONS.length);
+    setSuggestionIndex(next);
+    const suggestion = QUESTION_SUGGESTIONS[next];
+    setQuestion(suggestion.question);
+    setOptions([...suggestion.options]);
+    setCorrectAnswer(String(suggestion.correctIndex));
+  };
+
+  const addAutoQuestions = () => {
+    if (!roomId) return;
+    QUESTION_SUGGESTIONS.slice(0, 3).forEach((suggestion) => {
+      socket.emit('submit_question', {
+        roomId,
+        question: suggestion.question,
+        options: suggestion.options,
+        correctAnswer: suggestion.options[suggestion.correctIndex],
+      });
+    });
+  };
+
   const submitAnswer = (answer: string) => {
     if (selectedAnswer) return;
     setSelectedAnswer(answer);
@@ -87,6 +159,17 @@ export default function GameView({ user, socket, onMinimize }: { user: any; sock
       answer,
       userId: user.id
     });
+  };
+
+  const passTurnToPartner = () => {
+    if (!roomId || !room?.asker || !room?.responder) return;
+    socket.emit('pass_turn', { roomId, userId: user.id });
+    setCurrentQuestion(null);
+    setQuestion('');
+    setOptions(['', '', '', '']);
+    setCorrectAnswer('0');
+    setResult(null);
+    setSelectedAnswer(null);
   };
 
   if (!room) return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
@@ -105,6 +188,14 @@ export default function GameView({ user, socket, onMinimize }: { user: any; sock
           <div className="bg-rose-100 text-rose-600 px-3 py-1 rounded-full text-sm font-bold">
             {room.percentage}%
           </div>
+          {isAsker && (
+            <button
+              onClick={passTurnToPartner}
+              className="ml-auto px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600"
+            >
+              Dar vez ao parceiro
+            </button>
+          )}
         </div>
       </header>
 
@@ -123,6 +214,46 @@ export default function GameView({ user, socket, onMinimize }: { user: any; sock
                 <h2 className="text-xl font-bold text-slate-800">Crie uma pergunta</h2>
               </div>
               
+              <div className="space-y-4 mb-3">
+                <label className="block text-sm font-medium text-slate-700">Sugestões automáticas</label>
+                <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                  <select
+                    className="w-full md:w-2/3 px-3 py-2 rounded-lg border border-slate-200 focus:border-rose-500 focus:ring-1 focus:ring-rose-200 transition-all"
+                    value={suggestionIndex}
+                    onChange={(e) => setSuggestionIndex(Number(e.target.value))}
+                  >
+                    {QUESTION_SUGGESTIONS.map((s, index) => (
+                      <option key={index} value={index}>
+                        {s.question}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={applySuggestion}
+                      className="px-3 py-2 rounded-lg bg-rose-500 text-white text-xs font-semibold"
+                    >
+                      Carregar Suggestão
+                    </button>
+                    <button
+                      type="button"
+                      onClick={randomSuggestion}
+                      className="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold"
+                    >
+                      Aleatória
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addAutoQuestions}
+                      className="px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-semibold"
+                    >
+                      + 3 Automáticas
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <form onSubmit={submitQuestion} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Sua pergunta</label>

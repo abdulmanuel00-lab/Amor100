@@ -83,6 +83,7 @@ export default function App() {
   const [onlineUsers, setOnlineUsers] = useState<Array<{ id: string; name: string; online?: boolean }>>([]);
   const [minimizedRoomId, setMinimizedRoomId] = useState<string | null>(null);
   const [redirectToGame, setRedirectToGame] = useState<string | null>(null);
+  const [pendingQuestion, setPendingQuestion] = useState<any>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('amor100_user');
@@ -146,6 +147,7 @@ export default function App() {
       if (!payload?.roomId) return;
       if (minimizedRoomId === payload.roomId) {
         setMinimizedRoomId(null);
+        setPendingQuestion(payload);
         localStorage.removeItem('amor100_minimized_room');
         setRedirectToGame(payload.roomId);
       }
@@ -163,7 +165,13 @@ export default function App() {
 
   useEffect(() => {
     if (!redirectToGame) return;
-    setRedirectToGame(null);
+
+    const timer = setTimeout(() => {
+      setRedirectToGame(null);
+      setPendingQuestion(null);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [redirectToGame]);
 
   useEffect(() => {
@@ -199,7 +207,13 @@ export default function App() {
       <div className="min-h-screen bg-pink-50 text-slate-900 font-sans selection:bg-pink-200">
         <InviteOverlay socket={socket} user={user} />
 
-        {redirectToGame && <Navigate to={`/game/${redirectToGame}`} replace />}
+        {redirectToGame && (
+          <Navigate
+            to={`/game/${redirectToGame}`}
+            state={{ pendingQuestion }}
+            replace
+          />
+        )}
 
         {minimizedRoomId && (
           <div className="fixed bottom-20 inset-x-0 z-40 flex justify-center px-4 pointer-events-none">
